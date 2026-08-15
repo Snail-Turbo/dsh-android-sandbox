@@ -1,0 +1,59 @@
+{
+  "name": "dsh-userspace-gate",
+  "description": "Workspace-write guard plugin: a pure-user-space equivalent of the workspace-write sandbox at the tool-call layer — denies write/edit and bash write-intent calls whose targets fall outside the session workspace and platform temp roots, following the session sandbox mode",
+  "version": "0.1.0-rc.5",
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./invariant": {
+      "types": "./lib/types/invariant.d.ts",
+      "default": "./lib/invariant.js"
+    },
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/invariant.js",
+    "lib/types/**/*.d.ts",
+    "cordis.patch.yml"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "license": "MIT",
+  "peerDependencies": {
+    "@deepseek-ai/dsh-invariants": "^0.1.0-rc.5",
+    "@deepseek-ai/dsh-sandbox": "^0.1.0-rc.5",
+    "@deepseek-ai/dsh-sandbox-policy": "^0.1.0-rc.5",
+    "@deepseek-ai/dsh-session": "^0.1.0-rc.5",
+    "@deepseek-ai/dsh-tools": "^0.1.0-rc.5",
+    "@deepseek-ai/cordis": "^0.1.0-rc.5"
+  },
+  "dependencies": {
+    "@deepseek-ai/schemastery": "^0.1.0-rc.5"
+  },
+  "devDependencies": {
+    "@deepseek-ai/dsh-agent": "^0.1.0-rc.5",
+    "@deepseek-ai/dsh-agent-loop": "^0.1.0-rc.5",
+    "@deepseek-ai/dsh-agent-loop-testkit": "^0.1.0-rc.5",
+    "@deepseek-ai/dsh-invariants": "^0.1.0-rc.5",
+    "@deepseek-ai/dsh-llm": "^0.1.0-rc.5",
+    "@deepseek-ai/dsh-sandbox": "^0.1.0-rc.5",
+    "@deepseek-ai/dsh-sandbox-policy": "^0.1.0-rc.5",
+    "@deepseek-ai/dsh-session": "^0.1.0-rc.5",
+    "@deepseek-ai/dsh-tools": "^0.1.0-rc.5",
+    "@deepseek-ai/cordis": "^0.1.0-rc.5"
+  }
+}

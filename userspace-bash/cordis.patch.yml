@@ -1,0 +1,34 @@
+# The dsh-userspace-bash bundle patch: swaps the kernel-backed
+# bash-sandbox for the never-confining user-space executor on hosts where the
+# kernel runner cannot run (bwrap userns blocked, no Landlock — e.g. Android
+# GKI with a locked bootloader). Applied as a profile bundle layer; the
+# profile's own cordis.patch.yml overrides these rows if it must.
+#
+#   - Overrides the dsh-base `bash-sandbox` row by id, restating its complete
+#     configuration (a patch replaces the row's whole config) and naming the
+#     expected package so a renamed row fails loud with a name-mismatch
+#     diagnostic instead of silently disabling the wrong row.
+#   - Inserts the user-space executor, the read-only bash gate, and the
+#     os-denial guidance rows.
+#   - The executor row is disabled on win32: the dsh-base composition mounts
+#     `pwsh-sandbox` there, and a second provider of `ctx.shell` would make
+#     the boot fail with a duplicate service registration.
+
+- id: bash-sandbox
+  name: '@deepseek-ai/dsh-bash-sandbox'
+  disabled: true
+  config:
+    timeoutMs: 60000
+
+- insert:
+    - id: userspace-bash
+      name: 'dsh-userspace-bash'
+      disabled: !!js process.platform === 'win32'
+      config:
+        timeoutMs: 60000
+
+    - id: userspace-gate-readonly
+      name: 'dsh-userspace-bash/readonly-gate'
+
+    - id: os-denial-guidance
+      name: 'dsh-userspace-bash/os-denial-guidance'

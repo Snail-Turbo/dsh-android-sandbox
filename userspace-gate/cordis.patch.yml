@@ -1,0 +1,9 @@
+# The dsh-userspace-gate bundle patch: inserts the workspace-write
+# gate row. It is a pure user-space replacement for the kernel-backed
+# workspace-write sandbox at the tool-call layer, so it belongs with the
+# user-space bash executor bundle (`dsh-userspace-bash`) on hosts
+# without a usable kernel runner.
+
+- insert:
+    - id: userspace-gate
+      name: 'dsh-userspace-gate'

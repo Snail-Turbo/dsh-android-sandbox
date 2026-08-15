@@ -1,0 +1,32 @@
+{
+  "name": "dsh-userspace-bash",
+  "description": "User-space bash executor for hosts without a usable kernel runner: advertises a sandbox mode (so permission-presets and tool escalation surfaces work) but never confines — file-effect enforcement is delegated to the userspace-gate gates at tools/pre-execute",
+  "version": "0.1.0-rc.5",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./invariant": "./lib/invariant.js",
+    "./readonly-gate": "./lib/readonly-gate.js",
+    "./os-denial-guidance": "./lib/os-denial-guidance.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "license": "MIT",
+  "peerDependencies": {
+    "@deepseek-ai/dsh-bash-local": "^0.1.0-rc.5",
+    "@deepseek-ai/dsh-invariants": "^0.1.0-rc.5",
+    "@deepseek-ai/dsh-sandbox-policy": "^0.1.0-rc.5",
+    "@deepseek-ai/dsh-system-prompt": "^0.1.0-rc.5",
+    "@deepseek-ai/dsh-tools": "^0.1.0-rc.5"
+  }
+}
