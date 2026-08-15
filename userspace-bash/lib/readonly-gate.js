@@ -62,7 +62,7 @@ const MUTATION_COMMANDS = {
   rmdir: { operands: 'all', options: [] },
   rm: { operands: 'all', options: [] },
   unlink: { operands: 'all', options: [] },
-  truncate: { operands: 'all', options: [] },
+  truncate: { operands: 'all', options: [], skipValues: ['-s', '--size', '-r', '--reference'] },
   chmod: { operands: 'all-skip-first', options: [], skipValues: ['--reference'] },
   chown: { operands: 'all-skip-first', options: [], skipValues: ['--reference'] },
   tee: { operands: 'all', options: [] },
@@ -393,11 +393,15 @@ function scanBashTargets(command, initialCwd) {
     let optionValue
     let k = j
     let positionalOnly = false
+    let sawDynamic = false
     while (k < tokens.length) {
       const t = tokens[k]
       if (t === undefined || t.op) break
       const w = staticPath(t.text)
-      if (w === undefined) break
+      if (w === undefined) {
+        sawDynamic = true
+        break
+      }
       if (!positionalOnly && w.startsWith('-') && w !== '-') {
         if (w === '--') { positionalOnly = true; k += 1; continue }
         const eq = w.indexOf('=')
@@ -449,7 +453,7 @@ function scanBashTargets(command, initialCwd) {
     if (mutation.operands === 'none') {
       targets = optionValues
     } else if (mutation.operands === 'last-is-dest') {
-      const dest = targetDir !== undefined ? targetDir : (positionals.length > 0 ? positionals[positionals.length - 1] : undefined)
+      const dest = targetDir !== undefined ? targetDir : (positionals.length > 0 && !sawDynamic ? positionals[positionals.length - 1] : undefined)
       targets = dest === undefined ? [] : [dest]
     } else if (mutation.operands === 'all-skip-first') {
       const skip = positionals.length > 0 && isModeOrOwnerWord(positionals[0], commandWord)

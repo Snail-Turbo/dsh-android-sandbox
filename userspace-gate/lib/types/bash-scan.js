@@ -47,7 +47,7 @@ const MUTATION_COMMANDS = {
     rmdir: { operands: 'all', options: [] },
     rm: { operands: 'all', options: [] },
     unlink: { operands: 'all', options: [] },
-    truncate: { operands: 'all', options: [] },
+    truncate: { operands: 'all', options: [], skipValues: ['-s', '--size', '-r', '--reference'] },
     chmod: { operands: 'all-skip-first', options: [], skipValues: ['--reference'] },
     chown: { operands: 'all-skip-first', options: [], skipValues: ['--reference'] },
     tee: { operands: 'all', options: [] },
@@ -520,13 +520,19 @@ export function scanBashTargets(command, initialCwd = '') {
         let optionValue;
         let k = j;
         let positionalOnly = false;
+        // Set when the scan stops at a DYNAMIC word: any later positional — the
+        // real destination of a last-is-dest command, for example — is invisible,
+        // so the last static positional must never be mistaken for it.
+        let sawDynamic = false;
         while (k < tokens.length) {
             const t = tokens[k];
             if (t === undefined || t.op)
                 break;
             const w = staticPath(t.text);
-            if (w === undefined)
+            if (w === undefined) {
+                sawDynamic = true;
                 break;
+            }
             if (!positionalOnly && w.startsWith('-') && w !== '-') {
                 if (w === '--') {
                     positionalOnly = true;
@@ -592,9 +598,11 @@ export function scanBashTargets(command, initialCwd = '') {
         }
         else if (mutation.operands === 'last-is-dest') {
             // `cp a b $dyn` / `cp a $dyn b`: when the operand scan stopped at a
-            // dynamic word, the real destination is unknown — never mistake the
-            // last STATIC positional (a source) for the destination.
-            const dest = targetDir ?? (positionals.length > 0 ? positionals[positionals.length - 1] : undefined);
+            // dynamic word, the real destination is unknown (it may be that very
+            // word's expansion or a later one) — never mistake the last STATIC
+            // positional (a source) for the destination. An explicit `-t` /
+            // `--target-directory` destination is still known.
+            const dest = targetDir ?? (positionals.length > 0 && !sawDynamic ? positionals[positionals.length - 1] : undefined);
             targets = dest === undefined ? [] : [dest];
         }
         else if (mutation.operands === 'all-skip-first') {

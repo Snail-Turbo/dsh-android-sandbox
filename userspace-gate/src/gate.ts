@@ -22,13 +22,16 @@ const SHELL_SINKS = new Set(['/dev/null', '/dev/stdout', '/dev/stderr', '/dev/st
 const DEV_FD_SINKS = /^\/dev\/fd\/[0-2]$/
 
 /**
- * Whether an absolute target is a granted shell sink. Matches the raw spelling
- * AND the canonical one, so alias spellings (`/dev//null`, a symlinked
- * `/dev/stdout`) cannot be mistaken for file writes.
+ * Whether an absolute target is a granted shell sink. Matches the raw
+ * spelling, the lexically-collapsed spelling (`/dev//stdout` → `/dev/stdout`),
+ * and the canonical one (a symlinked `/dev/stdout`), so alias spellings cannot
+ * be mistaken for file writes even on hosts where the `/dev/std*` nodes do not
+ * exist (realpath then fails and the canonical fallback is the raw spelling).
  */
 function isShellSink(absolute: string, canonical: string): boolean {
-  if (SHELL_SINKS.has(absolute)) return true
-  if (DEV_FD_SINKS.test(absolute)) return true
+  const normalized = absolute.replace(/\/{2,}/g, '/')
+  if (SHELL_SINKS.has(normalized)) return true
+  if (DEV_FD_SINKS.test(normalized)) return true
   return SHELL_SINKS.has(canonical)
 }
 

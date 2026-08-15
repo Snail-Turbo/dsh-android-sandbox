@@ -1,4 +1,4 @@
-import { dirname, isAbsolute, resolve, sep } from "node:path";
+import { dirname, isAbsolute, resolve as resolvePath, sep } from "node:path";
 import { canonicalPath, writableRoots } from "@deepseek-ai/dsh-sandbox";
 import { stat } from "node:fs/promises";
 //#region ../../../vendor/cosmokit/src/misc.ts
@@ -843,7 +843,7 @@ const MUTATION_COMMANDS = {
     rmdir: { operands: 'all', options: [] },
     rm: { operands: 'all', options: [] },
     unlink: { operands: 'all', options: [] },
-    truncate: { operands: 'all', options: [] },
+    truncate: { operands: 'all', options: [], skipValues: ['-s', '--size', '-r', '--reference'] },
     chmod: { operands: 'all-skip-first', options: [], skipValues: ['--reference'] },
     chown: { operands: 'all-skip-first', options: [], skipValues: ['--reference'] },
     tee: { operands: 'all', options: [] },
@@ -1316,13 +1316,19 @@ function scanBashTargets(command, initialCwd = '') {
         let optionValue;
         let k = j;
         let positionalOnly = false;
+        // Set when the scan stops at a DYNAMIC word: any later positional — the
+        // real destination of a last-is-dest command, for example — is invisible,
+        // so the last static positional must never be mistaken for it.
+        let sawDynamic = false;
         while (k < tokens.length) {
             const t = tokens[k];
             if (t === undefined || t.op)
                 break;
             const w = staticPath(t.text);
-            if (w === undefined)
+            if (w === undefined) {
+                sawDynamic = true;
                 break;
+            }
             if (!positionalOnly && w.startsWith('-') && w !== '-') {
                 if (w === '--') {
                     positionalOnly = true;
@@ -1388,9 +1394,11 @@ function scanBashTargets(command, initialCwd = '') {
         }
         else if (mutation.operands === 'last-is-dest') {
             // `cp a b $dyn` / `cp a $dyn b`: when the operand scan stopped at a
-            // dynamic word, the real destination is unknown — never mistake the
-            // last STATIC positional (a source) for the destination.
-            const dest = targetDir ?? (positionals.length > 0 ? positionals[positionals.length - 1] : undefined);
+            // dynamic word, the real destination is unknown (it may be that very
+            // word's expansion or a later one) — never mistake the last STATIC
+            // positional (a source) for the destination. An explicit `-t` /
+            // `--target-directory` destination is still known.
+            const dest = targetDir ?? (positionals.length > 0 && !sawDynamic ? positionals[positionals.length - 1] : undefined);
             targets = dest === undefined ? [] : [dest];
         }
         else if (mutation.operands === 'all-skip-first') {
@@ -1505,14 +1513,17 @@ const SHELL_SINKS = new Set(['/dev/null', '/dev/stdout', '/dev/stderr', '/dev/st
 /** The standard fd-number sinks (`/dev/fd/0|1|2`); higher fds may alias real files. */
 const DEV_FD_SINKS = /^\/dev\/fd\/[0-2]$/;
 /**
- * Whether an absolute target is a granted shell sink. Matches the raw spelling
- * AND the canonical one, so alias spellings (`/dev//null`, a symlinked
- * `/dev/stdout`) cannot be mistaken for file writes.
+ * Whether an absolute target is a granted shell sink. Matches the raw
+ * spelling, the lexically-collapsed spelling (`/dev//stdout` → `/dev/stdout`),
+ * and the canonical one (a symlinked `/dev/stdout`), so alias spellings cannot
+ * be mistaken for file writes even on hosts where the `/dev/std*` nodes do not
+ * exist (realpath then fails and the canonical fallback is the raw spelling).
  */
 function isShellSink(absolute, canonical) {
-    if (SHELL_SINKS.has(absolute))
+    const normalized = absolute.replace(/\/{2,}/g, '/');
+    if (SHELL_SINKS.has(normalized))
         return true;
-    if (DEV_FD_SINKS.test(absolute))
+    if (DEV_FD_SINKS.test(normalized))
         return true;
     return SHELL_SINKS.has(canonical);
 }

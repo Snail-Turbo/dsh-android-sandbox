@@ -42,7 +42,7 @@
     "@deepseek-ai/cordis": "^0.1.0-rc.5"
   },
   "dependencies": {
-    "@deepseek-ai/schemastery": "^0.1.0-rc.5"
+    "@deepseek-ai/schemastery": "^3.18.1"
   },
   "devDependencies": {
     "@deepseek-ai/dsh-agent": "^0.1.0-rc.5",
